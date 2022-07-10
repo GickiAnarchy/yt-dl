@@ -2,7 +2,7 @@
 import os
 import random
 import pickle
-from linklist2 import LinkList
+from linklist import LinkList
 import PySimpleGUI as sg
 from pytube import YouTube, Playlist
 from re import search
@@ -21,6 +21,7 @@ BKP = f"{data_dir}/.links.fa.bak"
 
 class Link_GUI:
     def __init__(self, linklist = None):
+        print = sg.Print
         if not os.path.isdir(data_dir):
             os.makedirs(data_dir)
         if linklist == None:
@@ -60,23 +61,14 @@ class Link_GUI:
             videos = list(p.video_urls)
             for link in videos:
                 self.LL.add_cur(link)
-            return "PLAYLIST"
+                print(f"{link} added")
         else:
             self.LL.add_cur(url)
-            return "LINK"
-
+            print(f"{url} added")
 
 #
 #    YT
 #
-    def longDL(self, runBtn, stat1):
-        runBtn.update(disabled = True)
-        for link in self.LL.current:
-            stat1.update(f"working: {link}")
-            self.download(link)
-            stat1.update("Done")
-        runBtn.update(disabled = False)
-
     def download(self, link):
         yt = YouTube(link)
         #video = yt.streams.filter(only_audio=True).first()
@@ -104,7 +96,7 @@ class Link_GUI:
 
         layout_left = [
         [sg.Text("Enter a link: "), sg.Input(key = "-LINK-")],
-        [sg.Multiline("", key = "-console-", reroute_cprint=True)]
+        [sg.Multiline("", size = (50, 25), key = "-console-", reroute_cprint=True, reroute_stdout=True, autoscroll = True, disabled = True)]
         ]
         
         list_size = (50,13)
@@ -143,7 +135,7 @@ class Link_GUI:
             comBox = window["-COMP-"]
             stat1 = window["-STAT1-"]
             stat2 = window["-STAT2-"]
-            
+
             if event in (None, "-QUIT-", sg.WIN_CLOSED):
                 if len(self.LL.current) > 0:
                     choice = sg.popup_yes_no("Save the list?")
@@ -152,24 +144,33 @@ class Link_GUI:
                 break
 
             if event == "-SAVE-":
+                print("Save pressed")
                 self.save()
-            
+
             if event == "-LOAD-":
+                print("Load pressed")
                 self.load()
 
+            if event == "-CLEAR-":
+                print("Clear pressed")
+                choice = sg.popup_yes_no("Clear the current link list?")
+                if choice == "Yes":
+                    self.LL.current.clear()
+                    print("Link List is cleared")
+
             if event == "-ADD-":
-                print("add pressed")
+                print("Add pressed")
                 l = values["-LINK-"]
-                stat1.update(l)
-                stat2.update(self.add(l))
-            
+                self.add(l)
+
             if event == "-RUN-":
+                print("Download pressed")
                 if len(self.LL.current) <= 0:
                     sg.popup("HEY! Link List is EMPTY!")
-                window.perform_long_operation(lambda :self.longDL(runBtn, stat1), "-END-")
-
-            if event == "-END-":
-                sg.popup("Downloads Done")
+                runBtn.update(disabled = True)
+                for link in self.LL.current:
+                    window.perform_long_operation(lambda :self.download(link), "-END-")
+                runBtn.update(disabled = False)
 
             if event is not None:
                 loadBtn.update(disabled = self.hasSaved)
@@ -177,7 +178,7 @@ class Link_GUI:
                 comBox.update(self.LL.completedNames())
                 print("....update....")
 
- 
+
 if __name__ == "__main__":
     gui = Link_GUI()
     gui.run()
