@@ -19,7 +19,7 @@ completed = f"{data_dir}/.completed.fa"
 BKP = f"{data_dir}/.links.fa.bak"
 
 
-class Link_GUI:
+class LinkGui:
     def __init__(self, linklist = None):
         print = sg.Print
         if not os.path.isdir(data_dir):
@@ -119,20 +119,20 @@ class Link_GUI:
         ]
         return layout
 
-    def makeWindow(self):
+    def make_window(self):
         sg.theme(random.choice(sg.theme_list()))
         lo = self.makeLayout()
-        win = sg.Window("YT Downloader", lo, size = (980, 450), resizable = False, finalize = True)
+        win = sg.Window("YT Downloader", lo, size = (980, 450), resizable = False, finalize = True, keep_on_top = True)
         return win
 
     def run(self):
-        window = self.makeWindow()
+        window = self.make_window()
         while True:
             event, values = window.read()
-            runBtn = window["-RUN-"]
-            loadBtn = window["-LOAD-"]
-            listBox = window["-LIST-"]
-            comBox = window["-COMP-"]
+            run_btn = window["-RUN-"]
+            load_btn = window["-LOAD-"]
+            list_box = window["-LIST-"]
+            com_box = window["-COMP-"]
             stat1 = window["-STAT1-"]
             stat2 = window["-STAT2-"]
 
@@ -167,18 +167,18 @@ class Link_GUI:
                 print("Download pressed")
                 if len(self.LL.current) <= 0:
                     sg.popup("HEY! Link List is EMPTY!")
-                runBtn.update(disabled = True)
+                run_btn.update(disabled = True)
                 for link in self.LL.current:
                     window.perform_long_operation(lambda :self.download(link), "-END-")
-                runBtn.update(disabled = False)
+                run_btn.update(disabled = False)
 
             if event is not None:
-                loadBtn.update(disabled = self.hasSaved)
-                listBox.update(self.LL.current)
-                comBox.update(self.LL.completedNames())
+                load_btn.update(disabled = self.hasSaved)
+                list_box.update(self.LL.current)
+                com_box.update(self.LL.completedNames())
                 print("....update....")
 
 
 if __name__ == "__main__":
-    gui = Link_GUI()
+    gui = LinkGui()
     gui.run()
