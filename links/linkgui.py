@@ -6,6 +6,8 @@ from linklist import LinkList
 import PySimpleGUI as sg
 from pytube import YouTube, Playlist
 from re import search
+import base64images
+import pops
 
 
 MAGICK = "https://youtube.com/playlist?list=PLXS7fy2pHgKch6L4xtvybDqxo4tVWAoKK"
@@ -44,13 +46,15 @@ class LinkGui:
         return not os.path.exists(f"{data_dir}/.links.fa")
 
     def save(self, fname = ".links.fa"):
+        fname = pops.pop_get_file
         with open(f"{data_dir}/{fname}", "wb") as file:
             pickle.dump(self.LL, file)
             file.close()
         sg.popup("SAVED")
 
     def load(self):
-        with open(f"{data_dir}/.links.fa", "rb") as file:
+        f = pops.pop_get_file
+        with open(f"{data_dir}/{f}", "rb") as file:
             self.LL = pickle.load(file)
             file.close()
 
@@ -96,10 +100,10 @@ class LinkGui:
 
         layout_left = [
         [sg.Text("Enter a link: "), sg.Input(key = "-LINK-")],
-        [sg.Multiline("", size = (50, 25), key = "-console-", reroute_cprint=True, reroute_stdout=True, autoscroll = True, disabled = True)]
+        [sg.Multiline("", size = (50, 10), key = "-console-", reroute_cprint=True, reroute_stdout=True, autoscroll = True, disabled = True)]
         ]
         
-        list_size = (50,13)
+        list_size = (50,10)
 
         layout_right = [
         [sg.TabGroup([
@@ -109,11 +113,14 @@ class LinkGui:
 
         layout_bottom = [
         [sg.Button("Add", key = "-ADD-", bind_return_key=True), sg.Button("Save", key = "-SAVE-"), sg.Button("Load", key = "-LOAD-"), sg.Button("Clear", key = "-CLEAR-")],
-        [sg.Text(""), sg.Button("DL LINKS", key = "-RUN-"),sg.Button("Quit", key = "-QUIT-"), sg.Text("")]
+        [sg.Text(""), sg.Button(image_data = base64images.DL_BTN, key = "-RUN-"),sg.Button("Quit", key = "-QUIT-"), sg.Text("")]
         ]
 
+        
+
+    #size = (520, 300), 
         layout = [
-        [sg.Column(layout_left, size = (520, 300), justification = "left", pad = (5,5)), sg.Column(layout_right, size = (520, 300), justification = "right", pad = (5,5))],
+        [sg.Column(layout_left, justification = "left", pad = (5,5)), sg.Column(layout_right, justification = "right", pad = (5,5))],
         [sg.Column(layout_bottom, element_justification = "center", justification = "center", pad = (5,5))],
         [sg.StatusBar("", key = "-STAT1-", size = (50,3)), sg.StatusBar("", key = "-STAT2-", size = (50,3))]
         ]
@@ -122,7 +129,8 @@ class LinkGui:
     def make_window(self):
         sg.theme(random.choice(sg.theme_list()))
         lo = self.makeLayout()
-        win = sg.Window("YT Downloader", lo, size = (980, 450), resizable = False, finalize = True, keep_on_top = True)
+        win = sg.Window("YT Downloader", lo, resizable = False, finalize = True, keep_on_top = True)
+        #size = (980, 450), 
         return win
 
     def run(self):
