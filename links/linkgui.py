@@ -1,3 +1,5 @@
+#pylint:disable=W0702
+#pylint:disable=W0612
 #pylint:disable=E0401
 import os
 import random
@@ -30,9 +32,6 @@ class LinkGui:
             self.LL = LinkList()
         else:
             self.LL = linklist
-        if not self.hasSaved:
-            self.load()
-
 
     @property
     def LL(self):
@@ -45,20 +44,26 @@ class LinkGui:
     def hasSaved(self):
         return not os.path.exists(f"{data_dir}/.links.fa")
 
-    def save(self, fname = ".links.fa"):
-        fname = pops.pop_get_file
+    def save(self):
+        fname = pops.pop_save()
+        if fname == False:
+            return
         with open(f"{data_dir}/{fname}", "wb") as file:
             pickle.dump(self.LL, file)
             file.close()
         sg.popup("SAVED")
 
     def load(self):
-        f = pops.pop_get_file
+        f = pops.pop_load()
+        if f == False:
+            return
         with open(f"{data_dir}/{f}", "rb") as file:
             self.LL = pickle.load(file)
             file.close()
 
     def add(self, url: str):
+        if url == "MAGICK":
+            url = "https://youtube.com/playlist?list=PLXS7fy2pHgKch6L4xtvybDqxo4tVWAoKK"
         PL = "playlist"
         if search(PL, url):
             p = Playlist(url)
@@ -88,7 +93,28 @@ class LinkGui:
         os.rename(out_file, new_file)
         name = os.path.split(new_file)
         self.LL.add_com(link, name[1])
-        return True        
+        return True
+
+    def download_thread_test(self):
+        while True:
+            link = self.LL.current.pop()
+            if link == None:
+                break
+            yt = YouTube(link)
+            #video = yt.streams.filter(only_audio=True).first()
+            video = yt.streams.get_audio_only()
+            destination = data_dir
+            try:
+                out_file = video.download(output_path=destination)
+            except:
+                return False
+            base, ext = os.path.splitext(out_file)
+            new_file = base + '.mp3'
+            os.rename(out_file, new_file)
+            name = os.path.split(new_file)
+            self.LL.add_com(link, name[1])
+        return True
+
 
 #
 #    GUI
@@ -176,8 +202,12 @@ class LinkGui:
                 if len(self.LL.current) <= 0:
                     sg.popup("HEY! Link List is EMPTY!")
                 run_btn.update(disabled = True)
-                for link in self.LL.current:
-                    window.perform_long_operation(lambda :self.download(link), "-END-")
+#                for link in self.LL.current:
+#                    window.perform_long_operation(lambda :self.download(link), "-END-")
+                window.perform_long_operation(self.download_thread_test(), "-END-")
+                if event == "-END-":
+                    if values["-END-"] == False:
+                        pops.pop_oops()
                 run_btn.update(disabled = False)
 
             if event is not None:
