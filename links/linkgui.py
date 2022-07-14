@@ -19,7 +19,7 @@ RED = "#D70010"
 BLUE = "#0800D7"
 
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__),".", ".data"))
-completed = f"{data_dir}/.completed.fa"
+COMPLETED = f"{data_dir}/all_completed.txt"
 BKP = f"{data_dir}/.links.fa.bak"
 
 
@@ -28,10 +28,13 @@ class LinkGui:
         print = sg.Print
         if not os.path.isdir(data_dir):
             os.makedirs(data_dir)
+        if not os.path.exists(COMPLETED):
+            self.save_completed(create = True)
         if linklist == None:
             self.LL = LinkList()
         else:
             self.LL = linklist
+        self.all_completed = []
 
     @property
     def LL(self):
@@ -61,6 +64,32 @@ class LinkGui:
             self.LL = pickle.load(file)
             file.close()
 
+    def save_completed(self, create = False):
+        if create:
+            with open(COMPLETED, "w") as f:
+                f.close()
+        self.load_completed()
+        with open(COMPLETED, "w") as file:
+            for com in self.all_completed:
+                comp = f"{com}\n"
+                file.write(comp)
+            file.close()
+
+    def load_completed(self):
+        load_com = []
+        with open(COMPLETED, "r") as file:
+            for line in file:
+                ln = line[:-1]
+                load_com.append(ln)
+            file.close()
+            for f in load_com:
+                if f not in self.all_completed:
+                    self.all_completed.append(ln)
+                    print(f"ADDED TO ALL COMPLETED LIST:\n{ln}")
+
+    def merge_completed(self):
+        pass
+
     def add(self, url: str):
         if url == "MAGICK":
             url = "https://youtube.com/playlist?list=PLXS7fy2pHgKch6L4xtvybDqxo4tVWAoKK"
@@ -78,28 +107,9 @@ class LinkGui:
 #
 #    YT
 #
-    def download(self, link):
-        yt = YouTube(link)
-        #video = yt.streams.filter(only_audio=True).first()
-        video = yt.streams.get_audio_only()
-        destination = data_dir
-        try:
-            out_file = video.download(output_path=destination)
-        except:
-            return False
-        base, ext = os.path.splitext(out_file)
-        print(ext)
-        new_file = base + '.mp3'
-        os.rename(out_file, new_file)
-        name = os.path.split(new_file)
-        self.LL.add_com(link, name[1])
-        return True
-
-    def download_thread_test(self):
-        while True:
-            link = self.LL.current.pop()
-            if link == None:
-                break
+    def download_audio(self):
+        perfect = True
+        for link in self.LL.current:
             yt = YouTube(link)
             #video = yt.streams.filter(only_audio=True).first()
             video = yt.streams.get_audio_only()
@@ -107,14 +117,18 @@ class LinkGui:
             try:
                 out_file = video.download(output_path=destination)
             except:
-                return False
+                err_link = f"::ERROR::\n{link}"
+                self.LL.current.remove(link)
+                self.LL.current.append(err_link)
+                perfect = False
+                continue
             base, ext = os.path.splitext(out_file)
+            print(ext)
             new_file = base + '.mp3'
             os.rename(out_file, new_file)
             name = os.path.split(new_file)
             self.LL.add_com(link, name[1])
-        return True
-
+        return perfect
 
 #
 #    GUI
@@ -142,9 +156,6 @@ class LinkGui:
         [sg.Text(""), sg.Button(image_data = base64images.DL_BTN, key = "-RUN-"),sg.Button("Quit", key = "-QUIT-"), sg.Text("")]
         ]
 
-        
-
-    #size = (520, 300), 
         layout = [
         [sg.Column(layout_left, justification = "left", pad = (5,5)), sg.Column(layout_right, justification = "right", pad = (5,5))],
         [sg.Column(layout_bottom, element_justification = "center", justification = "center", pad = (5,5))],
@@ -155,8 +166,7 @@ class LinkGui:
     def make_window(self):
         sg.theme(random.choice(sg.theme_list()))
         lo = self.makeLayout()
-        win = sg.Window("YT Downloader", lo, resizable = False, finalize = True, keep_on_top = True)
-        #size = (980, 450), 
+        win = sg.Window("Down with YT", lo, resizable = False, finalize = True, keep_on_top = True)
         return win
 
     def run(self):
@@ -202,13 +212,14 @@ class LinkGui:
                 if len(self.LL.current) <= 0:
                     sg.popup("HEY! Link List is EMPTY!")
                 run_btn.update(disabled = True)
-#                for link in self.LL.current:
-#                    window.perform_long_operation(lambda :self.download(link), "-END-")
-                window.perform_long_operation(self.download_thread_test(), "-END-")
-                if event == "-END-":
-                    if values["-END-"] == False:
-                        pops.pop_oops()
+                window.perform_long_operation(lambda: self.download_audio(), "-END-")
                 run_btn.update(disabled = False)
+                self.save_completed()
+
+            if event == "-END-":
+                end = values[event]
+                if end == False:
+                    pops.pop_oops()
 
             if event is not None:
                 load_btn.update(disabled = self.hasSaved)
