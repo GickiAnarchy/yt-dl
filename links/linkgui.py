@@ -229,5 +229,6 @@ class LinkGui:
 
 
 if __name__ == "__main__":
+    pops.splash()
     gui = LinkGui()
     gui.run()
