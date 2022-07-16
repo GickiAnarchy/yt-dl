@@ -53,10 +53,10 @@ class LinkGui:
     def save(self):
         if self.saveFile == None:
             pick = pops.pop_save()
-        if pick == False:
-            return
-        if pick != False:
-            self.saveFile = pick
+            if pick == False:
+                return
+            if pick != False:
+                self.saveFile = pick
         with open(f"{self.saveFile}", "wb") as file:
             pickle.dump(self.LL, file)
             file.close()
@@ -146,7 +146,7 @@ class LinkGui:
         [sg.Radio("Audio", "AV", default = True, size = (10,1), key = "-RA-"), sg.Radio("Video", "AV", default = False, size = (10,1), key = "-RV-")],
         [sg.Multiline("", size = (50, 10), key = "-console-", reroute_cprint=True, reroute_stdout=True, autoscroll = True, disabled = True)]
         ]
-        
+
         list_size = (50,10)
         layout_right = [
         [sg.TabGroup([
@@ -174,6 +174,7 @@ class LinkGui:
 
     def run(self):
         window = self.make_window()
+        splash = pops.splash().read()
         while True:
             event, values = window.read()
 
@@ -185,10 +186,6 @@ class LinkGui:
             stat2 = window["-STAT2-"]
 
             if event in (None, "-QUIT-", sg.WIN_CLOSED):
-                if len(self.LL.current) > 0:
-                    choice = sg.popup_yes_no("Save the list?")
-                    if choice == "Yes":
-                        self.save()
                 break
 
             if event == "-SAVE-":
@@ -205,8 +202,8 @@ class LinkGui:
                     choice = sg.popup_yes_no("Clear the current LinkList file?\n(*File will be saved*)")
                     if choice == "Yes":
                         self.save()
-                        self.LL == LinkList()
-                        self.saveFile == None
+                        self.LL = LinkList()
+                        self.saveFile = None
                         print("Link List is cleared")
 
             if event == "-ADD-":
@@ -242,7 +239,8 @@ class LinkGui:
                 print("....update....")
 
 
+#
+#END
 if __name__ == "__main__":
-    pops.splash()
     gui = LinkGui()
     gui.run()
